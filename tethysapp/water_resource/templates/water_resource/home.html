@@ -1,0 +1,353 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+
+  {% load static tethys_gizmos terms_tags analytical%}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>VIC Water Resources</title>
+
+    <link rel="stylesheet" href="{% static 'tethys_apps/css/app_base.min.css' %}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'water_resource/css/app.css' %}">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.31/esri/css/esri.css">
+
+
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-modal/2.2.6/js/bootstrap-modal.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-modal/2.2.6/js/bootstrap-modalmanager.js"></script>-->
+    <script src="{% static 'tethys_apps/vendor/cookies.js' %}" type="text/javascript"></script>
+    <script src="{% static 'tethys_apps/js/app_base.js' %}" type="text/javascript"></script>
+    <script src="{% static 'tethys_apps/vendor/imagesloaded.min.js' %}" type="text/javascript"></script>
+    <script src="{% static 'tethys_apps/vendor/masonry.min.js' %}" type="text/javascript"></script>
+    <script src="{% static 'tethys_apps/js/app_library.js' %}" type="text/javascript"></script>
+    <script src="{% static 'tethys_apps/js/isotope.pkgd.min.js' %}" type="text/javascript"></script>
+
+
+    <script src="{% static 'water_resource/js/dakawa.js' %}"></script>
+    <script src="{% static 'water_resource/js/rufiji.js' %}"></script>
+    <script src="{% static 'water_resource/js/ruvu.js' %}"></script>
+    <script src="{% static 'water_resource/js/wami.js' %}"></script>
+    <script src="{% static 'water_resource/data/watershed_data.js' %}"></script>
+    <script src="https://js.arcgis.com/3.31/"></script>
+    <script>
+
+        //https://developers.arcgis.com/javascript/3/sandbox/sandbox.html?sample=portal_addshapefile&share=false
+
+        var map;
+        var fCollection;
+        require([
+            "esri/config",
+            "esri/InfoTemplate",
+            "esri/map",
+            "esri/request",
+            "esri/geometry/scaleUtils",
+            "esri/layers/FeatureLayer",
+            "esri/renderers/SimpleRenderer",
+            "esri/symbols/PictureMarkerSymbol",
+            "esri/symbols/SimpleFillSymbol",
+            "esri/symbols/SimpleLineSymbol",
+            "dojo/dom",
+            "dojo/json",
+            "dojo/on",
+            "dojo/parser",
+            "dojo/sniff",
+            "dojo/_base/array",
+            "esri/Color",
+            "dojo/_base/lang",
+            "dijit/layout/BorderContainer",
+            "dijit/layout/ContentPane",
+            "dojo/domReady!"
+        ],
+            function (
+                esriConfig, InfoTemplate, Map, request, scaleUtils, FeatureLayer,
+                SimpleRenderer, PictureMarkerSymbol, SimpleFillSymbol, SimpleLineSymbol,
+                dom, JSON, on, parser, sniff, arrayUtils, Color, lang
+            ) {
+
+                parser.parse();
+
+                var portalUrl = "https://www.arcgis.com";
+
+                esriConfig.defaults.io.proxyUrl = "/proxy/";
+
+                map = new Map("mapCanvas", {
+                    basemap: "gray",
+                    center: [36.440727, -7.502342],
+                    zoom: 6,
+                    slider: false
+                });
+
+                on(map, "load", function (event) {
+                    //
+                    addShapefileToMap(rufiji);
+                    addShapefileToMap(ruvu);
+                    addShapefileToMap(wami);
+                    addShapefileToMap(dakawa);
+                    map.infoWindow = null;
+                });
+
+
+
+
+                function addShapefileToMap(featureCollection) {
+                    //add the shapefile to the map and zoom to the feature collection extent
+                    //If you want to persist the feature collection when you reload browser you could store the collection in
+                    //local storage by serializing the layer using featureLayer.toJson()  see the 'Feature Collection in Local Storage' sample
+                    //for an example of how to work with local storage.
+                    var fullExtent;
+                    var layers = [];
+                    console.log(0);
+                    arrayUtils.forEach(featureCollection.layers, function (layer) {
+                        console.log("parsing");
+                        var infoTemplate = new InfoTemplate("Details", "${*}");
+                        var featureLayer = new FeatureLayer(layer, {
+                            infoTemplate: infoTemplate
+                        });
+                        //associate the feature with the popup on click to enable highlight and zoom to
+                        featureLayer.on('click', function (event) {
+                            //map.infoWindow.setFeatures([event.graphic]);
+                            $("#watershedid").text(watersheddata[event.graphic._layer._name].name);
+                            $("#spt").text(watersheddata[event.graphic._layer._name].variables["spt"]);
+                            $("#ltm").text(watersheddata[event.graphic._layer._name].variables["ltm"]);
+                            $("#q95").text(watersheddata[event.graphic._layer._name].variables["q95"]);
+                            $("#q80").text(watersheddata[event.graphic._layer._name].variables["q80"]);
+                            $("#q50").text(watersheddata[event.graphic._layer._name].variables["q50"]);
+                            $("#dwa").text(watersheddata[event.graphic._layer._name].variables["dwa"]);
+                            $("#iwa").text(watersheddata[event.graphic._layer._name].variables["iwa"]);
+                            $("#scf").text(watersheddata[event.graphic._layer._name].variables["scf"]);
+                            $('#mymodal').modal();
+                            theFeature = event;
+
+                        });
+                        //change default symbol if desired. Comment this out and the layer will draw with the default symbology
+                        changeRenderer(featureLayer);
+                        fullExtent = fullExtent ?
+                            fullExtent.union(featureLayer.fullExtent) : featureLayer.fullExtent;
+                        layers.push(featureLayer);
+                        console.log("added");
+                    });
+                    map.addLayers(layers);
+                    //map.setExtent(fullExtent.expand(1.25), true);
+
+                    //dom.byId('upload-status').innerHTML = "";
+                }
+
+                function changeRenderer(layer) {
+                    //change the default symbol for the feature collection for polygons and points
+                    var symbol = null;
+                    switch (layer.geometryType) {
+                        case 'esriGeometryPoint':
+                            symbol = new PictureMarkerSymbol({
+                                'angle': 0,
+                                'xoffset': 0,
+                                'yoffset': 0,
+                                'type': 'esriPMS',
+                                'url': 'https://static.arcgis.com/images/Symbols/Shapes/BluePin1LargeB.png',
+                                'contentType': 'image/png',
+                                'width': 20,
+                                'height': 20
+                            });
+                            break;
+                        case 'esriGeometryPolygon':
+                            symbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID,
+                                new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,
+                                    new Color([112, 112, 112]), 1), new Color([136, 136, 136, 0.25]));
+                            break;
+                    }
+                    if (symbol) {
+                        layer.setRenderer(new SimpleRenderer(symbol));
+                    }
+                }
+                gadd = addShapefileToMap;
+
+            });
+        var gadd;
+        var fCollection;
+        var theFeature;
+        $(document).ready(function () {
+            $(document).click(function (event) {
+                console.log("clicked");
+                var clickover = $(event.target);
+                var _opened = $("#navbarHeader").hasClass("show");
+                if (_opened === true && !clickover.hasClass("navbar-toggler")) {
+                    $("button.navbar-toggler").click();
+                }
+            });
+            $("#help-modal").addClass("hide");
+        });
+        function showInfo(){
+            console.log("show info");
+            if($("#help-modal").is(':visible')){
+                //display: block
+                $("#help-modal").addClass("hide");
+            } else {
+                $("#help-modal").removeClass("hide");
+            }
+            $("body").toggleClass("modal-open");
+
+            $(".modal-backdrop").attr("style", "display:none");
+            // $("#help-modal").toggle();
+            // $("#help-modal").toggleClass("modal-open");
+
+            $("#help-modal").modal();
+            $("#mymodal").attr("style", "display:none!important");
+        }
+        $('#help-modal').on('hidden.bs.modal', function () {
+            $("#help-modal").toggleClass("hide");
+        });
+        $('#mymodal').on('show.bs.modal', function () {
+            $(this).find('.modal-body').css({
+                width:'auto', //probably not needed
+                height:'auto', //probably not needed
+                'max-height':'100%'
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="collapse bg-dark" id="navbarHeader">
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-8 col-md-7 py-4">
+                        <h4 class="text-white">About</h4>
+                        <p class="text-muted">Select watershed of interest to access the calculated values for the seven
+                            indices - Spring Test, Long-Term-Mean, Q95, Q80, Q50, Domestic Water Availability,
+                            Industrial Water Availability, Special Consideration Flow.</p>
+                    </div>
+                    <li class="col-sm-4 offset-md-1 py-4" style="text-align: right;">
+
+                        <ul class="list-unstyled">
+                            <li><a href="#" class="text-white" onclick="showInfo()">Info</a></li>
+                            <li>
+                                <a href="javascript:void(0);" onclick="TETHYS_APP_BASE.exit_app('/apps/');" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Exit" class="text-white">Exit</a>
+                            </li>
+                            {% if not request.user.is_authenticated %}
+                            <li>
+                                <a href="javascript:void(0);" onclick="TETHYS_APP_BASE.exit_app('{% url 'accounts:login' %}?next={{request.path}}');"data-toggle="tooltip" data-placement="bottom" title="Log In">Log In</a>
+                            </li>
+                            {%  endif %}
+                            <li>
+                                <a onclick="showInfo()"><span class="glyphicon glyphicon-question-sign"></span></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="navbar navbar-dark bg-dark shadow-sm">
+            <div class="container d-flex justify-content-between">
+                <a href="#" class="navbar-brand d-flex align-items-center">
+                    <img src="{% static 'water_resource/images/drop.png' %}" alt="Water Resources" title="Water Resources" height="30" style="margin-right: 10px; height: 30px;" />
+                    <strong>Water Resources</strong>
+                </a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <main role="main">
+        <div id="mapCanvas" style="width:100%; height:100%"></div>
+    </main>
+    <div id="mymodal" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Water Indices</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h2><span id="watershedid"></span></h2>
+                    <div class="container">
+                        <div class="row">
+                            <div style="padding-right: 95px;" class="col-sm-6 text-nowrap" alt="If Q50-Q95 < 10% of Q50, 1 = Yes and 0 = No" title="If Q50-Q95 < 10% of Q50, 1 = Yes and 0 = No">
+                                <span class="indices">Spring Test</span>
+                            </div> <div class="col-sm-6" id="spt">amount</div>
+                        </div>
+                        <div class="row">
+                            <div style="padding-right: 95px;" class="col-sm-6 text-nowrap" alt="Long-term spatial variability" title="Long-term spatial variability">
+                                 <span class="indices">Long-Term-Mean</span>
+                            </div> <div class="col-sm-6" id="ltm">amount</div>
+                        </div>
+                        <div class="row">
+                            <div style="padding-right: 95px;" class="col-sm-6 text-nowrap" alt="E-Flow/Reserved Flow" title="E-Flow/Reserved Flow">
+                                 <span class="indices">Q95</span>
+                            </div> <div class="col-sm-6" id="q95">amount</div>
+                        </div>
+                        <div class="row">
+                            <div style="padding-right: 95px;" class="col-sm-6 text-nowrap" alt="Normal Flow " title="Normal Flow ">
+                                <span class="indices"> Q80</span>
+                            </div> <div class="col-sm-6" id="q80">amount</div>
+                        </div>
+                        <div class="row">
+                            <div style="padding-right: 95px;" class="col-sm-6 text-nowrap" alt="Flood Flow" title="Flood Flow">
+                                 <span class="indices">Q50</span>
+                            </div>  <div class="col-sm-6" id="q50">amount</div>
+                        </div>
+                        <div class="row">
+                            <div style="padding-right: 95px;" class="col-6 text-nowrap" alt="Normal Flow available for Domestic use allocation (Q80 - Q95)" title="Normal Flow available for Domestic use allocation (Q80 - Q95)">
+                                <span class="indices">Domestic Water Availability </span>
+                            </div> <div class="col-sm-6" id="dwa">amount</div>
+                        </div>
+                        <div class="row">
+                            <div style="padding-right: 95px;" class="col-6 text-nowrap" alt="Flow available for Commercial use Allocation (Q50 - Q80)" title="Flow available for Commercial use Allocation (Q50 - Q80)">
+                                 <span class="indices">Industrial Water Availability</span>
+                            </div> <div class="col-sm-6" id="iwa">amount</div>
+                        </div>
+                        <div class="row">
+                            <div style="padding-right: 95px;" class="col-6 text-nowrap" alt="Special Consideration e.g Hydropower (Q10 - Q50)" title="Special Consideration e.g Hydropower (Q10 - Q50)">
+                                 <span class="indices">Special Consideration Flow</span>
+                            </div> <div class="col-sm-6" id="scf">amount</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="help-modal" tabindex="-1" role="dialog" aria-labelledby="help-modal-label">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Help</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="showInfo()"><span aria-hidden="true">×</span></button>
+
+                </div>
+                <div class="modal-body">
+                    <p>Select watershed of interest to access the calculated values for the seven indices - Spring Test, Long-Term-Mean, Q95, Q80, Q50, Domestic Water Availability, Industrial Water Availability, Special Consideration Flow.</p>
+                    <p>This is currently in development amd is an internal SERVIR admin tool, and is not to be used for any operational purpose. The SERVIR Project, NASA, and USAID, make no express or implied warranty of this application and associated data as to the merchantability or fitness for a particular purpose. Neither the US Government nor its contractors shall be liable for special, consequential or incidental damages attributed to this application and associated data.</p>
+                    <p><a href="https://servirglobal.net/Privacy-Terms-of-Use" target="_blank">Privacy and Terms of Use</a></p>
+                    <h4>Contact:</h4>
+                    <ul class="list-unstyled ml-4">
+                        <li>Contact name</li>
+                        <li>Contact email</li>
+                        <li>Contact phone</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <div align="center" id="logos">
+                        <div class="logo-image"><a href="https://www.usaid.gov/" target="_blank"><img src="https://servirglobal.net/Portals/_default/Skins/Servir2015/img/usaid.png"></a></div>
+                        <div class="logo-image"><a href="https://appliedsciences.nasa.gov/" target="_blank"><img src="https://servirglobal.net/Portals/_default/Skins/Servir2015/img/nasa.png"></a></div>
+                        <div class="logo-image"><a href="http://servir.cilss.int/en/" target="_blank"><img src="https://servirglobal.net/Portals/_default/Skins/Servir2015/img/cilss.png"></a></div>
+                        <div class="logo-image"><a href="http://servir.rcmrd.org/" target="_blank"><img src="https://servirglobal.net/Portals/_default/Skins/Servir2015/img/rcmrd.png"></a></div>
+                        <div class="logo-image"><a href="http://servir.icimod.org/" target="_blank"><img src="https://servirglobal.net/Portals/_default/Skins/Servir2015/img/icimod.png"></a></div>
+                        <div class="logo-image"><a href="https://servir.adpc.net/" target="_blank"><img src="https://servirglobal.net/Portals/_default/Skins/Servir2015/img/adpc.png"></a></div>
+                        <div class="logo-image"><a href="https://ciat.cgiar.org/" target="_blank"><img src="https://www.servirglobal.net/Portals/_default/Skins/Servir2015/img/CIAT-logo.png"></a></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
