@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>VIC Water Resources</title>
-
+    <link rel="icon" href="{% static 'water_resource/images/drop.png' %}">
     <link rel="stylesheet" href="{% static 'tethys_apps/css/app_base.min.css' %}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="{% static 'water_resource/css/app.css' %}">
@@ -68,11 +68,11 @@
                 dom, JSON, on, parser, sniff, arrayUtils, Color, lang
             ) {
 
-                parser.parse();
+               // parser.parse();
 
-                var portalUrl = "https://www.arcgis.com";
+               // var portalUrl = "https://www.arcgis.com";
 
-                esriConfig.defaults.io.proxyUrl = "/proxy/";
+                //esriConfig.defaults.io.proxyUrl = "/proxy/";
 
                 map = new Map("mapCanvas", {
                     basemap: "gray",
@@ -82,7 +82,7 @@
                 });
 
                 on(map, "load", function (event) {
-                    //
+
                     addShapefileToMap(rufiji);
                     addShapefileToMap(ruvu);
                     addShapefileToMap(wami);
@@ -100,7 +100,6 @@
                     //for an example of how to work with local storage.
                     var fullExtent;
                     var layers = [];
-                    console.log(0);
                     arrayUtils.forEach(featureCollection.layers, function (layer) {
                         console.log("parsing");
                         var infoTemplate = new InfoTemplate("Details", "${*}");
@@ -109,7 +108,6 @@
                         });
                         //associate the feature with the popup on click to enable highlight and zoom to
                         featureLayer.on('click', function (event) {
-                            //map.infoWindow.setFeatures([event.graphic]);
                             $("#watershedid").text(watersheddata[event.graphic._layer._name].name);
                             $("#spt").text(watersheddata[event.graphic._layer._name].variables["spt"]);
                             $("#ltm").text(watersheddata[event.graphic._layer._name].variables["ltm"]);
@@ -121,7 +119,7 @@
                             $("#scf").text(watersheddata[event.graphic._layer._name].variables["scf"]);
                             $('#mymodal').modal();
                             theFeature = event;
-
+                            $("#help-modal").addClass("hide");
                         });
                         //change default symbol if desired. Comment this out and the layer will draw with the default symbology
                         changeRenderer(featureLayer);
@@ -131,9 +129,6 @@
                         console.log("added");
                     });
                     map.addLayers(layers);
-                    //map.setExtent(fullExtent.expand(1.25), true);
-
-                    //dom.byId('upload-status').innerHTML = "";
                 }
 
                 function changeRenderer(layer) {
@@ -170,7 +165,6 @@
         var theFeature;
         $(document).ready(function () {
             $(document).click(function (event) {
-                console.log("clicked");
                 var clickover = $(event.target);
                 var _opened = $("#navbarHeader").hasClass("show");
                 if (_opened === true && !clickover.hasClass("navbar-toggler")) {
@@ -180,7 +174,6 @@
             $("#help-modal").addClass("hide");
         });
         function showInfo(){
-            console.log("show info");
             if($("#help-modal").is(':visible')){
                 //display: block
                 $("#help-modal").addClass("hide");
@@ -190,14 +183,13 @@
             $("body").toggleClass("modal-open");
 
             $(".modal-backdrop").attr("style", "display:none");
-            // $("#help-modal").toggle();
-            // $("#help-modal").toggleClass("modal-open");
 
             $("#help-modal").modal();
             $("#mymodal").attr("style", "display:none!important");
         }
         $('#help-modal').on('hidden.bs.modal', function () {
-            $("#help-modal").toggleClass("hide");
+            $("#help-modal").addClass("hide");
+            $("body").removeClass("modal-open");
         });
         $('#mymodal').on('show.bs.modal', function () {
             $(this).find('.modal-body').css({
@@ -211,7 +203,7 @@
 
 <body>
     <header>
-        <div class="collapse bg-dark" id="navbarHeader">
+        <div class="collapse bg-dark tethys-app-header" id="navbarHeader">
             <div class="container">
                 <div class="row">
                     <div class="col-sm-8 col-md-7 py-4">
